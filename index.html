@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Live HTML CSS JS Editor</title>
+<title>Live Code Runner</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <!-- Firebase SDK -->
@@ -10,43 +10,112 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 <style>
-*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
-body{background:#0d1117;color:#fff;height:100vh;display:flex;flex-direction:column}
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+  font-family:system-ui,sans-serif;
+}
+body{
+  background:#0d1117;
+  color:#fff;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+}
 
+/* NAVBAR */
 nav{
-  height:55px;background:#161b22;display:flex;
-  justify-content:space-between;align-items:center;
-  padding:0 15px;border-bottom:1px solid #30363d
+  height:55px;
+  background:#161b22;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:0 15px;
+  border-bottom:1px solid #30363d;
 }
 nav h1{font-size:15px}
 nav button{
-  margin-left:8px;padding:6px 14px;border:none;
-  border-radius:6px;cursor:pointer;color:#fff
+  margin-left:8px;
+  padding:6px 14px;
+  border:none;
+  border-radius:6px;
+  cursor:pointer;
+  color:#fff;
 }
 #runBtn{background:#238636}
 #shareBtn{background:#1f6feb}
 #copyBtn{background:#8957e5;display:none}
 
-.container{flex:1;display:flex;flex-direction:column}
-.editors{flex:1;display:grid;grid-template-columns:repeat(3,1fr)}
-.editor{display:flex;flex-direction:column;border-right:1px solid #30363d}
-.editor label{background:#161b22;padding:6px;font-size:13px;border-bottom:1px solid #30363d}
-.editor textarea{
-  flex:1;background:#0d1117;color:#e6edf3;
-  border:none;padding:10px;resize:none;outline:none
+/* LAYOUT */
+.container{
+  flex:1;
+  display:flex;
+  flex-direction:column;
 }
-.output{flex:1;background:#fff}
-iframe{width:100%;height:100%;border:none}
+.editors{
+  flex:1;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+}
+.editor{
+  display:flex;
+  flex-direction:column;
+  border-right:1px solid #30363d;
+}
+.editor label{
+  background:#161b22;
+  padding:6px;
+  font-size:13px;
+  border-bottom:1px solid #30363d;
+}
+.editor textarea{
+  flex:1;
+  background:#0d1117;
+  color:#e6edf3;
+  border:none;
+  padding:10px;
+  resize:none;
+  outline:none;
+}
 
+/* OUTPUT */
+.output{
+  flex:1;
+  background:#fff;
+}
+iframe{
+  width:100%;
+  height:100%;
+  border:none;
+}
+
+/* VIEW MODE (shared link) */
+body.view-mode nav,
+body.view-mode .editors{
+  display:none;
+}
+body.view-mode .output{
+  flex:1;
+}
+
+/* TOAST */
 .toast{
-  position:fixed;bottom:20px;right:20px;
-  background:#238636;color:#fff;
-  padding:10px 14px;border-radius:6px;
-  opacity:0;transition:.3s
+  position:fixed;
+  bottom:20px;
+  right:20px;
+  background:#238636;
+  padding:10px 14px;
+  border-radius:6px;
+  opacity:0;
+  transition:.3s;
 }
 .toast.show{opacity:1}
 
-@media(max-width:900px){.editors{grid-template-columns:1fr}}
+/* MOBILE */
+@media(max-width:900px){
+  .editors{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
@@ -56,7 +125,7 @@ iframe{width:100%;height:100%;border:none}
   <div>
     <button id="runBtn">Run ▶</button>
     <button id="shareBtn">Share 🔗</button>
-    <button id="copyBtn">Copy Link 📋</button>
+    <button id="copyBtn">Copy 📋</button>
   </div>
 </nav>
 
@@ -75,6 +144,7 @@ iframe{width:100%;height:100%;border:none}
       <textarea id="js"></textarea>
     </div>
   </div>
+
   <div class="output">
     <iframe id="output" sandbox="allow-scripts"></iframe>
   </div>
@@ -83,7 +153,7 @@ iframe{width:100%;height:100%;border:none}
 <div class="toast" id="toast">Link copied ✔</div>
 
 <script>
-/******** FIREBASE ********/
+/* 🔥 FIREBASE (TERA CONFIG) */
 firebase.initializeApp({
   apiKey: "AIzaSyBbrDGRAVcRqbGzMmQ_mjui7ne7MEZvqsQ",
   authDomain: "nobitav1.firebaseapp.com",
@@ -94,22 +164,24 @@ firebase.initializeApp({
 });
 const db = firebase.firestore();
 
-/******** ELEMENTS ********/
+/* ELEMENTS */
 const html = document.getElementById("html");
 const css = document.getElementById("css");
-const js = document.getElementById("js");
+const js  = document.getElementById("js");
 const output = document.getElementById("output");
 const copyBtn = document.getElementById("copyBtn");
 const toast = document.getElementById("toast");
 
 let shareLink = "";
 
-/******** RUN ********/
+/* RUN */
 runBtn.onclick = () => {
   output.srcdoc = `
 <!DOCTYPE html>
 <html>
-<head><style>${css.value}</style></head>
+<head>
+<style>${css.value}</style>
+</head>
 <body>
 ${html.value}
 <script>${js.value}<\/script>
@@ -117,10 +189,10 @@ ${html.value}
 </html>`;
 };
 
-/******** ID ********/
+/* ID */
 const genId = () => Math.random().toString(36).substring(2,8);
 
-/******** SHARE + AUTO COPY ********/
+/* SHARE + COPY */
 shareBtn.onclick = async () => {
   const id = genId();
 
@@ -134,30 +206,34 @@ shareBtn.onclick = async () => {
   shareLink = location.origin + location.pathname + "?id=" + id;
   history.pushState({}, "", shareLink);
 
-  copyToClipboard(shareLink);
   copyBtn.style.display = "inline-block";
+  copyToClipboard(shareLink);
 };
 
-/******** COPY BUTTON ********/
+/* COPY BUTTON */
 copyBtn.onclick = () => copyToClipboard(shareLink);
 
-/******** COPY FUNCTION ********/
+/* COPY FUNC */
 function copyToClipboard(text){
   navigator.clipboard.writeText(text);
   toast.classList.add("show");
   setTimeout(()=>toast.classList.remove("show"),1500);
 }
 
-/******** LOAD FROM LINK ********/
+/* LOAD FROM LINK + VIEW MODE */
 (async()=>{
   const id = new URLSearchParams(location.search).get("id");
   if(!id) return;
+
+  document.body.classList.add("view-mode");
+
   const doc = await db.collection("snippets").doc(id).get();
   if(!doc.exists) return;
+
   const d = doc.data();
-  html.value=d.html||"";
-  css.value=d.css||"";
-  js.value=d.js||"";
+  html.value = d.html || "";
+  css.value  = d.css || "";
+  js.value   = d.js || "";
   runBtn.click();
 })();
 </script>
