@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Live HTML CSS JS Editor</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:system-ui,sans-serif}
+body{background:#0d1117;color:#fff;height:100vh;display:flex;flex-direction:column}
+
+nav{
+  height:55px;background:#161b22;display:flex;
+  justify-content:space-between;align-items:center;
+  padding:0 15px;border-bottom:1px solid #30363d
+}
+nav h1{font-size:15px}
+nav button{
+  margin-left:8px;padding:6px 14px;border:none;
+  border-radius:6px;cursor:pointer;color:#fff
+}
+#runBtn{background:#238636}
+#shareBtn{background:#1f6feb}
+#copyBtn{background:#8957e5;display:none}
+
+.container{flex:1;display:flex;flex-direction:column}
+.editors{flex:1;display:grid;grid-template-columns:repeat(3,1fr)}
+.editor{display:flex;flex-direction:column;border-right:1px solid #30363d}
+.editor label{background:#161b22;padding:6px;font-size:13px;border-bottom:1px solid #30363d}
+.editor textarea{
+  flex:1;background:#0d1117;color:#e6edf3;
+  border:none;padding:10px;resize:none;outline:none
+}
+.output{flex:1;background:#fff}
+iframe{width:100%;height:100%;border:none}
+
+.toast{
+  position:fixed;bottom:20px;right:20px;
+  background:#238636;color:#fff;
+  padding:10px 14px;border-radius:6px;
+  opacity:0;transition:.3s
+}
+.toast.show{opacity:1}
+
+@media(max-width:900px){.editors{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<nav>
+  <h1>Live Code Runner</h1>
+  <div>
+    <button id="runBtn">Run ▶</button>
+    <button id="shareBtn">Share 🔗</button>
+    <button id="copyBtn">Copy Link 📋</button>
+  </div>
+</nav>
+
+<div class="container">
+  <div class="editors">
+    <div class="editor">
+      <label>HTML</label>
+      <textarea id="html"></textarea>
+    </div>
+    <div class="editor">
+      <label>CSS</label>
+      <textarea id="css"></textarea>
+    </div>
+    <div class="editor">
+      <label>JavaScript</label>
+      <textarea id="js"></textarea>
+    </div>
+  </div>
+  <div class="output">
+    <iframe id="output" sandbox="allow-scripts"></iframe>
+  </div>
+</div>
+
+<div class="toast" id="toast">Link copied ✔</div>
+
+<script>
+/******** FIREBASE ********/
+firebase.initializeApp({
+  apiKey: "AIzaSyBbrDGRAVcRqbGzMmQ_mjui7ne7MEZvqsQ",
+  authDomain: "nobitav1.firebaseapp.com",
+  projectId: "nobitav1",
+  storageBucket: "nobitav1.appspot.com",
+  messagingSenderId: "705595261183",
+  appId: "1:705595261183:web:6e8a3ce273e9a4b5b3e8b1"
+});
+const db = firebase.firestore();
+
+/******** ELEMENTS ********/
+const html = document.getElementById("html");
+const css = document.getElementById("css");
+const js = document.getElementById("js");
+const output = document.getElementById("output");
+const copyBtn = document.getElementById("copyBtn");
+const toast = document.getElementById("toast");
+
+let shareLink = "";
+
+/******** RUN ********/
+runBtn.onclick = () => {
+  output.srcdoc = `
+<!DOCTYPE html>
+<html>
+<head><style>${css.value}</style></head>
+<body>
+${html.value}
+<script>${js.value}<\/script>
+</body>
+</html>`;
+};
+
+/******** ID ********/
+const genId = () => Math.random().toString(36).substring(2,8);
+
+/******** SHARE + AUTO COPY ********/
+shareBtn.onclick = async () => {
+  const id = genId();
+
+  await db.collection("snippets").doc(id).set({
+    html: html.value,
+    css: css.value,
+    js: js.value,
+    time: firebase.firestore.FieldValue.serverTimestamp()
+  });
+
+  shareLink = location.origin + location.pathname + "?id=" + id;
+  history.pushState({}, "", shareLink);
+
+  copyToClipboard(shareLink);
+  copyBtn.style.display = "inline-block";
+};
+
+/******** COPY BUTTON ********/
+copyBtn.onclick = () => copyToClipboard(shareLink);
+
+/******** COPY FUNCTION ********/
+function copyToClipboard(text){
+  navigator.clipboard.writeText(text);
+  toast.classList.add("show");
+  setTimeout(()=>toast.classList.remove("show"),1500);
+}
+
+/******** LOAD FROM LINK ********/
+(async()=>{
+  const id = new URLSearchParams(location.search).get("id");
+  if(!id) return;
+  const doc = await db.collection("snippets").doc(id).get();
+  if(!doc.exists) return;
+  const d = doc.data();
+  html.value=d.html||"";
+  css.value=d.css||"";
+  js.value=d.js||"";
+  runBtn.click();
+})();
+</script>
+
+</body>
+</html>
